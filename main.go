@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/joho/godotenv"
+
 	//"github.com/google/uuid"
-	"strconv"
 	"net"
+	"strconv"
+
 	kafka "github.com/segmentio/kafka-go"
 )
 
@@ -30,13 +34,17 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	var isCreateTopic bool
+	flag.BoolVar(&isCreateTopic, "t", false, "Create topic flag")
+	flag.Parse()
 	// get kafka reader using environment variables.
 	kafkaURL := os.Getenv("kafkaURL")
 	topic := os.Getenv("topic")
 	groupID := os.Getenv("groupID")
-
-	createTopic(kafkaURL, topic, 3)
-
+	fmt.Printf("Create topic flag: %v", isCreateTopic)
+	if isCreateTopic {
+		createTopic(kafkaURL, topic, 3)
+	}
 	reader := getKafkaReader(kafkaURL, topic, groupID)
 
 	defer reader.Close()
@@ -46,7 +54,7 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		fmt.Printf("consuming at topic:%v partition:%v offset:%v	key:%s  value:%s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		fmt.Printf("consuming topic:%v partition:%v offset:%v key:%s value:%s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 	}
 }
 
@@ -81,4 +89,5 @@ func createTopic(kafkaURL, topic string, partition int) {
 	if err != nil {
 		panic(err.Error())
 	}
+	fmt.Printf("Created topic: %v with %v partitions\n", topic, partition)
 }
